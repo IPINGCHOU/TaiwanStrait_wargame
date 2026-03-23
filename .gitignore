@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+*.pkl
+shinka_task/results/
+shinka_task/.shinka/
+.DS_Store
