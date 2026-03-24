@@ -95,7 +95,8 @@ def test_fitness_aggregate():
         {"score": 200, "taiwan_survived": False},
     ]
     combined = compute_fitness_aggregate(scenario_results)
-    expected = 433.3 * 0.5 + 200 * 0.3 + (2 / 3) * 200
+    avg = (700 + 400 + 200) / 3
+    expected = avg * 0.6 + 200 * 0.15 + (2 / 3) * 200
     assert abs(combined - expected) < 1.0
 
 
