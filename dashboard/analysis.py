@@ -53,7 +53,7 @@ def action_heatmap(history):
 
     # Extract numeric actions only
     numeric_keys = []
-    first_actions = history[0].get("japan_actions", {})
+    first_actions = (history[0].get("all_actions") or {}).get("japan", {})
     if first_actions:
         numeric_keys = [k for k, v in first_actions.items() if isinstance(v, (int, float))]
 
@@ -64,7 +64,7 @@ def action_heatmap(history):
     weeks = []
     data = {k: [] for k in numeric_keys}
     for i, entry in enumerate(history):
-        actions = entry.get("japan_actions")
+        actions = (entry.get("all_actions") or {}).get("japan")
         if actions is None:
             continue
         weeks.append(i + 1)
