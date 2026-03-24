@@ -1,4 +1,12 @@
-"""ShinkaEvolve evaluation harness — runs evolved japan_strategy across scenarios."""
+"""ShinkaEvolve evaluation harness — runs evolved japan_strategy across scenarios.
+
+Contract: ShinkaEvolve calls this as:
+    python evaluate.py --program_path <evolved_initial.py> --results_dir <dir>
+
+Must write to results_dir:
+    - metrics.json  (must contain "combined_score" float)
+    - correct.json  ({"correct": bool, "error": str|null})
+"""
 
 import sys
 import os
@@ -27,10 +35,11 @@ def load_strategy(program_path: str):
     return module.japan_strategy
 
 
-def run_evaluation(strategy_fn, results_dir: str = None) -> dict:
-    """Run the strategy across all scenarios and seeds, return aggregated fitness."""
-    all_results = []
+def run_evaluation(strategy_fn) -> dict:
+    """Run the strategy across all scenarios and seeds, return aggregated metrics."""
+    flat_results = []
 
+    scenario_summaries = []
     for scenario in EVALUATION_SCENARIOS:
         scenario_scores = []
         for seed in range(SEEDS_PER_SCENARIO):
@@ -42,52 +51,36 @@ def run_evaluation(strategy_fn, results_dir: str = None) -> dict:
                 game.step(actions)
 
             result = game.get_result()
-            scenario_scores.append({
+            run = {
                 "score": result["score"]["total"],
                 "taiwan_survived": result["taiwan_survived"],
                 "weeks": result["weeks"],
-                "final_electricity": result["score"].get("B_taiwan_survival", 0),
-                "final_escalation": result["state_history"][-1]["escalation_level"] if result["state_history"] else 0,
-            })
-
-        avg_score = np.mean([r["score"] for r in scenario_scores])
-        win_rate = np.mean([r["taiwan_survived"] for r in scenario_scores])
-
-        all_results.append({
-            "scenario": scenario["name"],
-            "avg_score": float(avg_score),
-            "win_rate": float(win_rate),
-            "runs": scenario_scores,
-        })
-
-    # Flatten for fitness aggregation
-    flat_results = []
-    for sr in all_results:
-        for run in sr["runs"]:
+            }
+            scenario_scores.append(run)
             flat_results.append(run)
 
-    combined_fitness = compute_fitness_aggregate(flat_results)
+        avg_score = float(np.mean([r["score"] for r in scenario_scores]))
+        win_rate = float(np.mean([r["taiwan_survived"] for r in scenario_scores]))
+        scenario_summaries.append({
+            "scenario": scenario["name"],
+            "avg_score": avg_score,
+            "win_rate": win_rate,
+        })
 
-    output = {
-        "combined_score": float(combined_fitness),
+    combined_fitness = float(compute_fitness_aggregate(flat_results))
+
+    return {
+        "combined_score": combined_fitness,
         "public": {
-            "combined_fitness": round(float(combined_fitness), 2),
+            "combined_fitness": round(combined_fitness, 2),
             "avg_score": round(float(np.mean([r["score"] for r in flat_results])), 2),
             "win_rate": round(float(np.mean([r["taiwan_survived"] for r in flat_results])), 3),
-            "min_scenario_avg": round(float(min(r["avg_score"] for r in all_results)), 2),
+            "min_scenario_avg": round(float(min(s["avg_score"] for s in scenario_summaries)), 2),
         },
         "private": {
-            "per_scenario": all_results,
+            "per_scenario": scenario_summaries,
         },
     }
-
-    # Save results if directory provided
-    if results_dir:
-        os.makedirs(results_dir, exist_ok=True)
-        with open(os.path.join(results_dir, "results.json"), "w") as f:
-            json.dump(output, f, indent=2, default=str)
-
-    return output
 
 
 def main():
@@ -96,11 +89,27 @@ def main():
     parser.add_argument("--results_dir", required=True, help="Directory to save results")
     args = parser.parse_args()
 
-    strategy_fn = load_strategy(args.program_path)
-    result = run_evaluation(strategy_fn, args.results_dir)
+    os.makedirs(args.results_dir, exist_ok=True)
 
-    # Print for ShinkaEvolve to capture
-    print(json.dumps(result["public"], indent=2))
+    try:
+        strategy_fn = load_strategy(args.program_path)
+        metrics = run_evaluation(strategy_fn)
+        correct = True
+        error = None
+    except Exception as e:
+        metrics = {"combined_score": 0.0}
+        correct = False
+        error = str(e)
+
+    # Write metrics.json (ShinkaEvolve reads combined_score from here)
+    with open(os.path.join(args.results_dir, "metrics.json"), "w") as f:
+        json.dump(metrics, f, indent=4)
+
+    # Write correct.json (ShinkaEvolve reads correctness from here)
+    with open(os.path.join(args.results_dir, "correct.json"), "w") as f:
+        json.dump({"correct": correct, "error": error}, f, indent=4)
+
+    print(json.dumps(metrics.get("public", metrics), indent=2))
 
 
 if __name__ == "__main__":
