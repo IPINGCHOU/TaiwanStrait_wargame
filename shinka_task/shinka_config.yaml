@@ -1,0 +1,23 @@
+# ShinkaEvolve configuration for Taiwan Strait blockade wargame
+task: shinka_task
+cluster: local
+
+evo_config:
+  num_generations: 150
+  llm_models:
+    - "deepseek-chat"
+    - "deepseek-reasoner"
+  llm_dynamic_selection: true
+  code_embed_sim_threshold: 0.85
+  max_novelty_attempts: 5
+
+database_config:
+  num_islands: 3
+  parent_selection_strategy: "fitness_novelty"
+  exploitation_ratio: 0.6
+  migration_interval: 10
+  migration_rate: 0.2
+
+job_config:
+  max_evaluation_jobs: 2
+  max_proposal_jobs: 3
