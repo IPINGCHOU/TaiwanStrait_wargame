@@ -142,6 +142,7 @@ class WarGame:
 
         s["total_cargo_delivered"] += convoy_result["cargo_delivered"]
         s["merchant_ships_lost"] += convoy_result["ships_lost"]
+        s["cargo_per_turn"].append(convoy_result["cargo_delivered"])
 
         # Track cargo via Japan
         cargo_via_japan = (
@@ -162,6 +163,7 @@ class WarGame:
         if new_escalation < s["escalation_level"]:
             s["escalation_decreased"] = True
         s["escalation_level"] = new_escalation
+        s["escalation_sum"] += new_escalation
 
         # --- Step 7: Homeland strike check ---
         check_homeland_strikes(s, self._china_profile_name)

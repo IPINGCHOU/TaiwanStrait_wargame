@@ -68,52 +68,71 @@ ESCALATION_AIRBASE_STRIKE_SCORE = 0.8
 ESCALATION_HOMELAND_STRIKE_SCORE = 2.0
 MAX_ESCALATION_CHANGE_PER_TURN = 1
 
-# --- Scoring Weights (spec section 9) ---
-SCORE_WIN_BONUS = 500
-SCORE_SURRENDER_PENALTY = -500
-SCORE_EARLY_SURRENDER_PER_WEEK = -10
+# --- Scoring Weights (v2: smooth gradients, centered so baseline ≈ 0) ---
+#
+# Design: range ≈ -1000 to +1000, baseline strategy ≈ 0
+# All categories use continuous functions, no binary jumps.
 
+# Category A — Strategic Outcome (-500 to +200)
+# Win: +50 base + up to +150 scaled by Taiwan final health
+# Lose: -200 base - 15 per remaining week
+SCORE_WIN_BASE = 50
+SCORE_WIN_HEALTH_MAX = 150           # scaled by (electricity% × morale)
+SCORE_SURRENDER_BASE = -200
+SCORE_SURRENDER_PER_REMAINING_WEEK = -15
+
+# Category B — Taiwan Survival Quality (0 to +200)
 SCORE_ELECTRICITY_MAX = 80
 SCORE_ECONOMY_MAX = 60
 SCORE_MORALE_MAX = 60
 
+# Category C — JMSDF Preservation (0 to +150)
 SCORE_JMSDF_SURFACE_MAX = 60
 SCORE_JMSDF_SUBS_MAX = 50
 SCORE_JMSDF_AIR_MAX = 40
 
-SCORE_HOMELAND_SAFE_BONUS = 100
+# Category D — Homeland Security (-200 to +100)
+# Continuous: 100 × exp(-total_strikes × 0.7) instead of binary safe/not-safe
+# Plus per-base penalties and missile defense
+SCORE_HOMELAND_MAX = 100
+SCORE_HOMELAND_DECAY_RATE = 0.7      # exponential decay per strike
 SCORE_OKINAWA_STRIKE_PENALTY = -30
 SCORE_KYUSHU_STRIKE_PENALTY = -60
 SCORE_MAINLAND_STRIKE_PENALTY = -100
 SCORE_US_MISSILE_DEFENSE_BONUS = 50
-SCORE_INTERCEPT_BONUS = 10
-SCORE_INTERCEPT_MAX = 50
 
+# Category E — Economic Impact (-100 to 0)
 SCORE_SEA_LANE_DISRUPTION_PER_WEEK = -5
-SCORE_ENERGY_IMPORT_DISRUPTION_MAX = -30
-SCORE_PORT_CONGESTION_MAX = -20
 
-SCORE_CONVOY_JAPAN_MAX = 50
-SCORE_CORRIDOR_RECOVERY_MAX = 40
+# Category F — Operational Success (0 to +200)
+SCORE_CONVOY_JAPAN_MAX = 40
+SCORE_CORRIDOR_RECOVERY_MAX = 30
 SCORE_ASW_EFFECTIVENESS_MAX = 30
 SCORE_BLOCKADE_CONTRIBUTION_MAX = 30
+SCORE_DELIVERY_CONSISTENCY_MAX = 40  # new: reward steady cargo across turns
+SCORE_CHINA_ATTRITION_MAX = 30       # new: reward degrading China forces
 
-SCORE_US_SATISFACTION_MAX = 50
-SCORE_FREE_RIDING_PENALTY = -50
-SCORE_FREE_RIDING_THRESHOLD = 0.2
-SCORE_REGIONAL_TRUST_MAX = 30
-SCORE_COORDINATION_MAX = 20
+# Category G — Alliance Credibility (-100 to +100)
+# Pure linear: score = 200 × deploy - 100 (so deploy=0 → -100, deploy=0.5 → 0, deploy=1.0 → +100)
+SCORE_ALLIANCE_SLOPE = 200
+SCORE_ALLIANCE_INTERCEPT = -100
 
-SCORE_ESCALATION_LOW_BONUS = 50
-SCORE_ESCALATION_LEVEL3_PENALTY = -50
-SCORE_ESCALATION_LEVEL4_PENALTY = -100
-SCORE_HOMELAND_ESCALATION_PENALTY = -150
+# Category H — Escalation Management (-200 to +100)
+# Continuous: 100 - 75 × avg_escalation_across_all_turns
+# avg_esc=0 → +100, avg_esc=1.33 → 0, avg_esc=4 → -200
+SCORE_ESCALATION_BASE = 100
+SCORE_ESCALATION_SLOPE = -75         # per unit of average escalation
 SCORE_DEESCALATION_BONUS = 30
 
-SCORE_ARTICLE9_PENALTY_PER_TURN = -10
+# Category I — Legal & Humanitarian (-100 to 0)
+SCORE_ARTICLE9_PENALTY_PER_TURN = -5  # reduced from -10 (was too punishing)
 SCORE_FIRST_STRIKE_PENALTY = -30
 SCORE_CIVILIAN_CASUALTY_MAX_PENALTY = -50
 SCORE_CIVILIAN_CASUALTY_DIVISOR = 1000
+
+# Centering offset — subtracted from total so baseline ≈ 0
+# (calibrated after computing baseline score under new system)
+SCORE_CENTERING_OFFSET = 470  # calibrated so baseline strategy ≈ 0
 
 # --- Game ---
 MAX_WEEKS = 20

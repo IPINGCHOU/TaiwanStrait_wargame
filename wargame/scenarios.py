@@ -212,6 +212,8 @@ def build_initial_state(scenario: dict) -> dict:
     # End-of-game summary helpers
     state["peak_blockade_tightness"] = BASE_BLOCKADE_LEVEL
     state["escalation_decreased"] = False
+    state["escalation_sum"] = 0  # cumulative escalation for averaging
+    state["cargo_per_turn"] = []  # per-turn cargo for consistency scoring
     state["japan_avg_deploy"] = 0.0
     state["japan_article9_violations"] = 0
     state["japan_first_strike"] = False
