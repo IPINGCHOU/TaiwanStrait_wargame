@@ -23,14 +23,21 @@ from dashboard.analysis import (
 st.set_page_config(page_title="Taiwan Strait Wargame", layout="wide")
 st.title("Taiwan Strait Blockade — Wargame Dashboard")
 
-# ─── Sidebar: API Key ────────────────────────────────────────────────────
+# ─── Sidebar: API Keys ───────────────────────────────────────────────────
 st.sidebar.markdown("### API Configuration")
-_current_key = os.getenv("DEEPSEEK_API_KEY", "")
-_api_key = st.sidebar.text_input("DeepSeek API Key", value=_current_key, type="password")
-if st.sidebar.button("Save API Key"):
-    _env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
-    set_key(_env_path, "DEEPSEEK_API_KEY", _api_key)
-    os.environ["DEEPSEEK_API_KEY"] = _api_key
+_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+
+_ds_key = os.getenv("DEEPSEEK_API_KEY", "")
+_ds_input = st.sidebar.text_input("DeepSeek API Key (LLM)", value=_ds_key, type="password")
+
+_oai_key = os.getenv("OPENAI_API_KEY", "")
+_oai_input = st.sidebar.text_input("OpenAI API Key (embeddings)", value=_oai_key, type="password")
+
+if st.sidebar.button("Save API Keys"):
+    set_key(_env_path, "DEEPSEEK_API_KEY", _ds_input)
+    set_key(_env_path, "OPENAI_API_KEY", _oai_input)
+    os.environ["DEEPSEEK_API_KEY"] = _ds_input
+    os.environ["OPENAI_API_KEY"] = _oai_input
     st.sidebar.success("Saved to .env")
 st.sidebar.markdown("---")
 
