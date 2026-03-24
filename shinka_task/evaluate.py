@@ -26,6 +26,24 @@ from wargame.scoring import compute_fitness_aggregate
 
 SEEDS_PER_SCENARIO = 5
 
+# Per-scenario normalization ranges (floor=passive Japan, ceiling=estimated best)
+# Each scenario's raw score is normalized to 0-100 so they contribute equally.
+SCENARIO_RANGES = {
+    "baseline": {"floor": -50, "ceiling": 400},
+    "surge":    {"floor": -350, "ceiling": 100},
+    "degraded": {"floor": -270, "ceiling": 300},
+}
+
+
+def _normalize(raw_score: float, scenario_name: str) -> float:
+    """Normalize a raw scenario score to 0-100."""
+    r = SCENARIO_RANGES.get(scenario_name, {"floor": -500, "ceiling": 500})
+    span = r["ceiling"] - r["floor"]
+    if span <= 0:
+        return 50.0
+    normalized = (raw_score - r["floor"]) / span * 100.0
+    return max(0.0, min(100.0, normalized))
+
 
 def load_strategy(program_path: str):
     """Load japan_strategy function from the evolved program file."""
@@ -37,11 +55,14 @@ def load_strategy(program_path: str):
 
 def run_evaluation(strategy_fn) -> dict:
     """Run the strategy across all scenarios and seeds, return aggregated metrics."""
-    flat_results = []
-
     scenario_summaries = []
+    all_normalized = []
+    all_wins = []
+
     for scenario in EVALUATION_SCENARIOS:
-        scenario_scores = []
+        scenario_raw = []
+        scenario_norm = []
+        scenario_wins = []
         for seed in range(SEEDS_PER_SCENARIO):
             game = WarGame(scenario=scenario, seed=seed)
 
@@ -51,31 +72,42 @@ def run_evaluation(strategy_fn) -> dict:
                 game.step(actions)
 
             result = game.get_result()
-            run = {
-                "score": result["score"]["total"],
-                "taiwan_survived": result["taiwan_survived"],
-                "weeks": result["weeks"],
-            }
-            scenario_scores.append(run)
-            flat_results.append(run)
+            raw = result["score"]["total"]
+            norm = _normalize(raw, scenario["name"])
 
-        avg_score = float(np.mean([r["score"] for r in scenario_scores]))
-        win_rate = float(np.mean([r["taiwan_survived"] for r in scenario_scores]))
+            scenario_raw.append(raw)
+            scenario_norm.append(norm)
+            scenario_wins.append(result["taiwan_survived"])
+
+        avg_raw = float(np.mean(scenario_raw))
+        avg_norm = float(np.mean(scenario_norm))
+        win_rate = float(np.mean(scenario_wins))
+        all_normalized.extend(scenario_norm)
+        all_wins.extend(scenario_wins)
+
         scenario_summaries.append({
             "scenario": scenario["name"],
-            "avg_score": avg_score,
+            "avg_raw_score": round(avg_raw, 1),
+            "avg_normalized": round(avg_norm, 1),
             "win_rate": win_rate,
         })
 
-    combined_fitness = float(compute_fitness_aggregate(flat_results))
+    # Fitness: avg normalized score (0-100) + win_rate bonus
+    avg_norm_all = float(np.mean(all_normalized))
+    min_scenario_norm = float(min(s["avg_normalized"] for s in scenario_summaries))
+    overall_win_rate = float(np.mean(all_wins))
+
+    # combined_score: 0-100 scale with win bonus
+    # avg_norm × 0.6 + min_scenario × 0.25 + win_rate × 15
+    combined = avg_norm_all * 0.6 + min_scenario_norm * 0.25 + overall_win_rate * 15
 
     return {
-        "combined_score": combined_fitness,
+        "combined_score": combined,
         "public": {
-            "combined_fitness": round(combined_fitness, 2),
-            "avg_score": round(float(np.mean([r["score"] for r in flat_results])), 2),
-            "win_rate": round(float(np.mean([r["taiwan_survived"] for r in flat_results])), 3),
-            "min_scenario_avg": round(float(min(s["avg_score"] for s in scenario_summaries)), 2),
+            "combined_score": round(combined, 2),
+            "avg_normalized": round(avg_norm_all, 1),
+            "min_scenario_normalized": round(min_scenario_norm, 1),
+            "win_rate": round(overall_win_rate, 3),
         },
         "private": {
             "per_scenario": scenario_summaries,
