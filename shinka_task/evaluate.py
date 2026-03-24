@@ -97,9 +97,9 @@ def run_evaluation(strategy_fn) -> dict:
     min_scenario_norm = float(min(s["avg_normalized"] for s in scenario_summaries))
     overall_win_rate = float(np.mean(all_wins))
 
-    # combined_score: 0-100 scale with win bonus
-    # avg_norm × 0.6 + min_scenario × 0.25 + win_rate × 15
-    combined = avg_norm_all * 0.6 + min_scenario_norm * 0.25 + overall_win_rate * 15
+    # combined_score: 0-1000 scale with win bonus
+    # avg_norm × 6 + min_scenario × 2.5 + win_rate × 150
+    combined = avg_norm_all * 6 + min_scenario_norm * 2.5 + overall_win_rate * 150
 
     return {
         "combined_score": combined,
