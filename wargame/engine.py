@@ -28,6 +28,7 @@ class WarGame:
         self.state_history = []
         self._done = False
         self._taiwan_survived = True
+        self.turn_actions = []
 
         # Load country profiles from registry
         china_name = self.state.pop("china_profile")
@@ -154,6 +155,7 @@ class WarGame:
             "japan": japan_actions,
             "taiwan": taiwan_actions,
         }
+        self.turn_actions.append(copy.deepcopy(all_actions))
         new_escalation = compute_escalation(
             s, all_actions, prev_civilians, combat_occurred
         )
@@ -254,4 +256,5 @@ class WarGame:
             "weeks": weeks_played,
             "taiwan_survived": self._taiwan_survived,
             "state_history": self.state_history,
+            "turn_actions": self.turn_actions,
         }

@@ -72,6 +72,27 @@ def test_passive_japan_scores_worse_than_active():
     assert active_score > passive_score + 50
 
 
+def test_turn_actions_recorded():
+    """Engine records all 4 players' actions each turn."""
+    scenario = EVALUATION_SCENARIOS[0]
+    game = WarGame(scenario=scenario, seed=42)
+
+    while not game.is_done():
+        game.step(_dummy_japan_actions())
+
+    result = game.get_result()
+
+    # turn_actions should be in result
+    assert "turn_actions" in result
+    # One entry per week played
+    assert len(result["turn_actions"]) == result["weeks"]
+    # Each entry has all 4 countries
+    first = result["turn_actions"][0]
+    assert set(first.keys()) == {"china", "us", "japan", "taiwan"}
+    # Japan actions match input (no clamping: 0.5 + 0.3 < 1.0)
+    assert first["japan"]["engagement_posture"] == "defensive"
+
+
 def _dummy_japan_actions():
     return {
         "surface_deploy": 0.5, "submarine_deploy": 0.5,
