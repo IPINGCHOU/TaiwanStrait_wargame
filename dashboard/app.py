@@ -8,6 +8,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 
+from dotenv import load_dotenv, set_key
+
+load_dotenv()
+
 from wargame.scenarios import EVALUATION_SCENARIOS
 from shinka_task.initial import japan_strategy as baseline_strategy
 from dashboard.replay import run_game_and_record, replay_widget
@@ -18,6 +22,17 @@ from dashboard.analysis import (
 
 st.set_page_config(page_title="Taiwan Strait Wargame", layout="wide")
 st.title("Taiwan Strait Blockade — Wargame Dashboard")
+
+# ─── Sidebar: API Key ────────────────────────────────────────────────────
+st.sidebar.markdown("### API Configuration")
+_current_key = os.getenv("DEEPSEEK_API_KEY", "")
+_api_key = st.sidebar.text_input("DeepSeek API Key", value=_current_key, type="password")
+if st.sidebar.button("Save API Key"):
+    _env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+    set_key(_env_path, "DEEPSEEK_API_KEY", _api_key)
+    os.environ["DEEPSEEK_API_KEY"] = _api_key
+    st.sidebar.success("Saved to .env")
+st.sidebar.markdown("---")
 
 tab1, tab2, tab3 = st.tabs(["Game Replay", "Strategy Analysis", "Scenario Explorer"])
 
@@ -81,6 +96,7 @@ with tab3:
 
     if "explorer_history" in st.session_state:
         replay_widget(st.session_state["explorer_history"],
-                      st.session_state["explorer_result"])
+                      st.session_state["explorer_result"],
+                      key_prefix="explorer")
         st.markdown("---")
         score_breakdown_table(st.session_state["explorer_result"])
