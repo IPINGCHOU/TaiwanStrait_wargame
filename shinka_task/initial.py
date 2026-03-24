@@ -57,8 +57,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # H. Escalation Management (-200 to +100): 100 - 75 × avg_escalation_across_all_turns
 # I. Legal/Humanitarian (-100 to 0): Article 9 violations, civilian casualties
 #
-# Fitness = avg_score × 0.6 + min_score × 0.15 + win_rate × 200
-# Evaluated across 3 scenarios × 5 seeds = 15 games.
+# Each scenario score is NORMALIZED to 0-100 (equal weight regardless of difficulty).
+# Fitness = avg_normalized × 0.6 + min_scenario_normalized × 0.25 + win_rate × 15
+# Max fitness ≈ 100. Baseline ≈ 48. Evaluated across 3 scenarios × 5 seeds = 15 games.
 #
 # === KEY INSIGHTS ===
 # - Submarines are your best asset (1.8x multiplier). Deploy them early and always.
