@@ -4,3 +4,6 @@ streamlit>=1.30
 matplotlib>=3.7
 plotly>=5.15
 openai>=1.0
+folium>=0.15
+streamlit-folium>=0.18
+python-dotenv>=1.0
