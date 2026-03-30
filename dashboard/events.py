@@ -60,11 +60,18 @@ def detect_events(history):
 def _check_escalation(events, state, prev_state, week):
     cur = state.get("escalation_level", 0)
     prev = prev_state.get("escalation_level", 0)
-    if cur != prev:
+    if cur > prev:
         events.append({
             "week": week,
             "category": "ESCALATION",
             "label": f"Escalation → Level {cur}",
+            "color": "#f39c12",
+        })
+    elif cur < prev:
+        events.append({
+            "week": week,
+            "category": "ESCALATION",
+            "label": f"De-escalation → Level {cur}",
             "color": "#f39c12",
         })
 

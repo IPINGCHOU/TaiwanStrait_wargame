@@ -96,6 +96,28 @@ def test_forces_no_event_small_loss():
     assert len(forces) == 0
 
 
+def test_forces_boundary_exactly_3_no_event():
+    """Loss of exactly 3 should NOT trigger (threshold is >3)."""
+    history = _make_history([
+        _make_state(week=1, china_surface_ships=60),
+        _make_state(week=2, china_surface_ships=57),
+    ])
+    events = detect_events(history)
+    forces = [e for e in events if e["category"] == "FORCES"]
+    assert len(forces) == 0
+
+
+def test_forces_boundary_exactly_4_triggers():
+    """Loss of exactly 4 should trigger (>3)."""
+    history = _make_history([
+        _make_state(week=1, china_surface_ships=60),
+        _make_state(week=2, china_surface_ships=56),
+    ])
+    events = detect_events(history)
+    forces = [e for e in events if e["category"] == "FORCES"]
+    assert len(forces) == 1
+
+
 def test_base_change_event():
     history = _make_history([
         _make_state(week=1, japan_base_okinawa="closed"),
