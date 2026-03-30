@@ -87,8 +87,6 @@ class WarGame:
             "japan": japan_actions,
             "taiwan": taiwan_actions,
         }
-        prev_civilians = s["civilian_casualties"]
-
         naval_result = resolve_naval(s, coalition_actions, china_actions, self.rng)
 
         # Apply naval losses
@@ -101,7 +99,6 @@ class WarGame:
         # Track Japan-specific losses and kill attribution
         s["japan_ships_lost"] += naval_result["japan_losses"]
         s["china_subs_neutralized_by_jmsdf"] += naval_result.get("china_subs_by_jmsdf", 0)
-        s["china_ships_neutralized_by_jmsdf"] += naval_result.get("china_ships_by_jmsdf", 0)
 
         combat_occurred = (
             naval_result["us_losses"] + naval_result["japan_losses"] +
@@ -158,7 +155,7 @@ class WarGame:
         }
         self.turn_actions.append(copy.deepcopy(all_actions))
         new_escalation = compute_escalation(
-            s, all_actions, prev_civilians, combat_occurred
+            s, all_actions, combat_occurred
         )
         if new_escalation < s["escalation_level"]:
             s["escalation_decreased"] = True

@@ -197,7 +197,6 @@ def build_initial_state(scenario: dict) -> dict:
 
     # Kill attribution
     state["china_subs_neutralized_by_jmsdf"] = 0
-    state["china_ships_neutralized_by_jmsdf"] = 0
     state["japan_blockade_reduction_share"] = 0
 
     # Global accumulators
@@ -205,8 +204,6 @@ def build_initial_state(scenario: dict) -> dict:
     state["merchant_ships_lost"] = 0
     state["total_cargo_delivered"] = 0
     state["cargo_via_japan"] = 0
-    state["civilian_casualties"] = 0
-    state["japan_civilian_casualties"] = 0
     state["sea_lanes_disrupted_weeks"] = 0
 
     # End-of-game summary helpers

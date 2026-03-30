@@ -54,8 +54,6 @@ from wargame.constants import (
     # Category I
     SCORE_ARTICLE9_PENALTY_PER_TURN,
     SCORE_FIRST_STRIKE_PENALTY,
-    SCORE_CIVILIAN_CASUALTY_MAX_PENALTY,
-    SCORE_CIVILIAN_CASUALTY_DIVISOR,
     # Centering
     SCORE_CENTERING_OFFSET,
     # Fitness
@@ -260,16 +258,11 @@ def _category_h_escalation_mgmt(state: dict, weeks_played: int) -> float:
 
 
 def _category_i_legal_humanitarian(state: dict) -> float:
-    """I — Legal & Humanitarian: article 9, first strike, civilian casualties. (-100 to 0)"""
+    """I — Legal & Humanitarian: article 9, first strike. (-100 to 0)"""
     score = 0.0
     score += SCORE_ARTICLE9_PENALTY_PER_TURN * state["japan_article9_violations"]
 
     if state.get("japan_first_strike", False):
         score += SCORE_FIRST_STRIKE_PENALTY
-
-    casualty_frac = min(
-        state["japan_civilian_casualties"] / SCORE_CIVILIAN_CASUALTY_DIVISOR, 1.0
-    )
-    score += casualty_frac * SCORE_CIVILIAN_CASUALTY_MAX_PENALTY
 
     return score

@@ -5,7 +5,6 @@ from __future__ import annotations
 from wargame.constants import (
     ESCALATION_DEPLOY_WEIGHT,
     ESCALATION_MISSILE_WEIGHT,
-    ESCALATION_CIVILIAN_WEIGHT,
     ESCALATION_PORT_STRIKE_SCORE,
     ESCALATION_AIRBASE_STRIKE_SCORE,
     MAX_ESCALATION_CHANGE_PER_TURN,
@@ -43,7 +42,6 @@ def _sum_missiles(all_actions: dict) -> float:
 def compute_escalation(
     state: dict,
     all_actions: dict,
-    prev_civilians: float,
     combat_occurred: bool,
     *,
     airbase_strike: bool = False,
@@ -53,11 +51,9 @@ def compute_escalation(
     Parameters
     ----------
     state : dict
-        Must contain ``escalation_level`` (int) and ``civilian_casualties`` (float).
+        Must contain ``escalation_level`` (int).
     all_actions : dict
         Keyed by country name; each value is a dict of action parameters.
-    prev_civilians : float
-        Civilian casualties at the *start* of the turn (before this turn's combat).
     combat_occurred : bool
         Whether any combat resolution happened this turn.
     airbase_strike : bool, optional
@@ -75,10 +71,6 @@ def compute_escalation(
     # missile fire intensity
     missiles_fired = _sum_missiles(all_actions)
     score += (missiles_fired / 100.0) * ESCALATION_MISSILE_WEIGHT
-
-    # civilian casualty delta
-    civilian_delta = state["civilian_casualties"] - prev_civilians
-    score += (civilian_delta / 500.0) * ESCALATION_CIVILIAN_WEIGHT
 
     # infrastructure targeting
     china_actions = all_actions.get("china", {})
@@ -112,14 +104,12 @@ def update_world_opinion(
     """Adjust and return world opinion on a scale of -1.0 (pro-China) to +1.0 (pro-coalition).
 
     Higher escalation (visible China aggression) pushes opinion toward
-    pro-coalition.  High coalition civilian casualties push opinion toward
-    pro-China.
+    pro-coalition.
 
     Parameters
     ----------
     state : dict
-        Must contain ``world_opinion`` (float, current value) and
-        ``civilian_casualties`` (float).
+        Must contain ``world_opinion`` (float, current value).
     all_actions : dict
         Action dicts keyed by country.
     escalation_level : int
@@ -135,10 +125,6 @@ def update_world_opinion(
     # Escalation pushes opinion toward pro-coalition (+)
     # Rationale: high-profile military escalation makes China look aggressive.
     escalation_shift = escalation_level * 0.05  # +0.00 to +0.20 per turn
-
-    # Civilian casualties push opinion toward pro-China (-)
-    casualties = state.get("civilian_casualties", 0.0)
-    casualty_shift = -(casualties / 10_000.0) * 0.1  # mild negative drift
 
     # Infrastructure targeting by China is a big optics hit for China
     china_actions = all_actions.get("china", {})
@@ -156,7 +142,7 @@ def update_world_opinion(
     coalition_shift = -(coalition_missiles / 500.0) * 0.05
 
     # Apply shifts
-    opinion += escalation_shift + casualty_shift + targeting_shift + coalition_shift
+    opinion += escalation_shift + targeting_shift + coalition_shift
 
     # Clamp
     opinion = max(-1.0, min(1.0, opinion))
