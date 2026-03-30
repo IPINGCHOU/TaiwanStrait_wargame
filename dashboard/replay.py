@@ -2,9 +2,11 @@
 
 import streamlit as st
 from streamlit_folium import st_folium
+import plotly.graph_objects as go
 
 from wargame.engine import WarGame
 from dashboard.map_view import render_map
+from dashboard.events import detect_events
 
 
 def run_game_and_record(scenario, japan_strategy_fn, seed=0):
@@ -75,7 +77,35 @@ def replay_widget(history, result, key_prefix="replay"):
     with col_status:
         _render_status_sidebar(state)
 
-    # Row 3: Week slider
+    # Row 3: Timeline with event markers + event log
+    events = detect_events(history)
+
+    # Plotly scatter strip for event markers
+    if events:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=[e["week"] for e in events],
+            y=[0] * len(events),
+            mode="markers",
+            marker=dict(
+                size=10,
+                color=[e["color"] for e in events],
+            ),
+            text=[f"{e['category']}: {e['label']}" for e in events],
+            hoverinfo="text",
+            showlegend=False,
+        ))
+        fig.update_layout(
+            height=50,
+            margin=dict(l=0, r=0, t=0, b=0),
+            xaxis=dict(range=[0, max_week], showticklabels=False, showgrid=False),
+            yaxis=dict(visible=False, range=[-0.5, 0.5]),
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+        )
+        st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_events")
+
+    # Week slider
     st.slider(
         "Week", 0, max_week, week_idx,
         key=f"{key_prefix}_week",
@@ -83,6 +113,29 @@ def replay_widget(history, result, key_prefix="replay"):
             {f"{key_prefix}_week_val": st.session_state[f"{key_prefix}_week"]}
         ),
     )
+
+    # Event log
+    if events:
+        with st.container(height=150):
+            for e in events:
+                if e["week"] < week_idx + 1:
+                    opacity = "1.0"
+                    weight = "normal"
+                elif e["week"] == week_idx + 1:
+                    opacity = "1.0"
+                    weight = "bold"
+                else:
+                    opacity = "0.4"
+                    weight = "normal"
+                bg = "background:rgba(41,128,185,0.15);" if e["week"] == week_idx + 1 else ""
+                st.markdown(
+                    f'<div style="opacity:{opacity}; font-weight:{weight}; font-size:13px; margin-bottom:2px; {bg} padding:2px 4px; border-radius:4px">'
+                    f'<span style="color:{e["color"]}; font-weight:bold; min-width:30px; display:inline-block">W{e["week"]}</span> '
+                    f'<span style="background:{e["color"]}33; color:{e["color"]}; padding:1px 6px; border-radius:4px; font-size:11px">{e["category"]}</span> '
+                    f'{e["label"]}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
     # Row 4: Game result on final week
     if week_idx == max_week:
