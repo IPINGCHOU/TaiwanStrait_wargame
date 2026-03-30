@@ -239,7 +239,7 @@ for col_side, history, name, key_prefix in [
                 st.text(f"Okinawa: {okinawa.upper()}")
                 st.text(f"Kyushu: {kyushu.upper()}")
 
-# ─── Mirrored Event Timeline ─────────────────────────────────────────────
+# ─── Mirrored Event Timeline (merged dots + labels) ─────────────────────
 l_events = detect_events(lh, result=lr)
 r_events = detect_events(rh, result=rr)
 
@@ -248,102 +248,128 @@ if l_events or r_events:
 
     # Center line
     fig.add_shape(
-        type="line", x0=0, x1=cmp_max + 1, y0=0, y1=0,
-        line=dict(color="#555", width=1),
+        type="line", x0=0.5, x1=cmp_max + 1.5, y0=0, y1=0,
+        line=dict(color="#555", width=2),
     )
 
-    # Left strategy events ABOVE the line (y > 0)
+    def _stagger_y(events, base_y, step):
+        """Assign y-positions to labels, staggering when weeks are close.
+
+        base_y: starting y offset from center (positive=above, negative=below)
+        step: increment per stagger level (positive=further from center)
+        Returns list of y values, one per event.
+        """
+        y_positions = []
+        for i, e in enumerate(events):
+            level = 0
+            # Check how many prior events are within 1 week
+            for j in range(i):
+                if abs(events[j]["week"] - e["week"]) <= 1:
+                    level += 1
+            y_positions.append(base_y + step * level)
+        return y_positions
+
+    # Compute staggered y positions
+    l_ys = _stagger_y(l_events, base_y=1.5, step=1.2) if l_events else []
+    r_ys = _stagger_y(r_events, base_y=-1.5, step=-1.2) if r_events else []
+
+    # Left strategy dots on the center line (above side)
     if l_events:
         fig.add_trace(go.Scatter(
             x=[e["week"] for e in l_events],
-            y=[0.5] * len(l_events),
-            mode="markers+text",
-            marker=dict(size=14, color=[e["color"] for e in l_events]),
-            text=[e["category"][0] for e in l_events],  # first letter
-            textposition="top center",
-            textfont=dict(size=14, color="#aaa"),
-            hovertext=[f"{l_name} W{e['week']}: {e['category']} — {e['label']}" for e in l_events],
+            y=[0.3] * len(l_events),
+            mode="markers",
+            marker=dict(size=12, color=[e["color"] for e in l_events]),
+            hovertext=[f"{l_name} W{e['week']}: {e['label']}" for e in l_events],
             hoverinfo="text",
             showlegend=False,
-            name=l_name,
         ))
 
-    # Right strategy events BELOW the line (y < 0)
+    # Right strategy dots on the center line (below side)
     if r_events:
         fig.add_trace(go.Scatter(
             x=[e["week"] for e in r_events],
-            y=[-0.5] * len(r_events),
-            mode="markers+text",
-            marker=dict(size=14, color=[e["color"] for e in r_events]),
-            text=[e["category"][0] for e in r_events],
-            textposition="bottom center",
-            textfont=dict(size=14, color="#aaa"),
-            hovertext=[f"{r_name} W{e['week']}: {e['category']} — {e['label']}" for e in r_events],
+            y=[-0.3] * len(r_events),
+            mode="markers",
+            marker=dict(size=12, color=[e["color"] for e in r_events]),
+            hovertext=[f"{r_name} W{e['week']}: {e['label']}" for e in r_events],
             hoverinfo="text",
             showlegend=False,
-            name=r_name,
         ))
 
+    # Left labels with guide lines (above)
+    for e, label_y in zip(l_events, l_ys):
+        is_outcome = e["category"] == "OUTCOME"
+        fig.add_annotation(
+            x=e["week"], y=label_y,
+            text=f"<b>{e['label']}</b>" if is_outcome else e["label"],
+            showarrow=True,
+            arrowhead=0, arrowwidth=1, arrowcolor=e["color"] + "66",
+            ax=0, ay=0,
+            xanchor="center", yanchor="bottom",
+            font=dict(size=12, color=e["color"]),
+        )
+        # Guide line from label to dot
+        fig.add_shape(
+            type="line", x0=e["week"], x1=e["week"],
+            y0=0.3, y1=label_y - 0.1,
+            line=dict(color=e["color"] + "44", width=1),
+        )
+
+    # Right labels with guide lines (below)
+    for e, label_y in zip(r_events, r_ys):
+        is_outcome = e["category"] == "OUTCOME"
+        fig.add_annotation(
+            x=e["week"], y=label_y,
+            text=f"<b>{e['label']}</b>" if is_outcome else e["label"],
+            showarrow=True,
+            arrowhead=0, arrowwidth=1, arrowcolor=e["color"] + "66",
+            ax=0, ay=0,
+            xanchor="center", yanchor="top",
+            font=dict(size=12, color=e["color"]),
+        )
+        fig.add_shape(
+            type="line", x0=e["week"], x1=e["week"],
+            y0=-0.3, y1=label_y + 0.1,
+            line=dict(color=e["color"] + "44", width=1),
+        )
+
     # Current week indicator
+    max_y = max([abs(y) for y in l_ys + r_ys] + [2.0]) + 0.5
     fig.add_shape(
-        type="line", x0=cmp_week + 1, x1=cmp_week + 1, y0=-1.2, y1=1.2,
+        type="line", x0=cmp_week + 1, x1=cmp_week + 1,
+        y0=-max_y, y1=max_y,
         line=dict(color="#3498db", width=2, dash="dot"),
     )
     fig.add_annotation(
-        x=cmp_week + 1, y=1.3, text=f"W{cmp_week + 1} (current)",
-        showarrow=False, font=dict(size=14, color="#3498db"),
+        x=cmp_week + 1, y=max_y + 0.3,
+        text=f"W{cmp_week + 1} (current)",
+        showarrow=False, font=dict(size=12, color="#3498db"),
     )
 
+    # Compute dynamic y range based on stagger depth
+    y_range = max_y + 1.0
+
     fig.update_layout(
-        height=180,
-        margin=dict(l=10, r=10, t=5, b=5),
+        height=max(300, int(y_range * 45)),
+        margin=dict(l=10, r=10, t=10, b=10),
         yaxis=dict(
-            visible=True, range=[-1.5, 1.5],
-            tickvals=[0.5, -0.5],
+            visible=True, range=[-y_range, y_range],
+            tickvals=[0.3, -0.3],
             ticktext=[f"▲ {l_name}", f"▼ {r_name}"],
-            tickfont=dict(size=14),
+            tickfont=dict(size=13),
             showgrid=False, zeroline=False,
         ),
-        xaxis=dict(range=[0, cmp_max + 1], showgrid=False, dtick=1,
-                   tickvals=list(range(1, cmp_max + 2)),
-                   ticktext=[f"W{i}" for i in range(1, cmp_max + 2)],
-                   tickfont=dict(size=14, color="#666")),
+        xaxis=dict(
+            range=[0.5, cmp_max + 1.5], showgrid=False,
+            tickvals=list(range(1, cmp_max + 2)),
+            ticktext=[f"W{i}" for i in range(1, cmp_max + 2)],
+            tickfont=dict(size=12, color="#666"),
+        ),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
     )
     st.plotly_chart(fig, use_container_width=True, key="compare_timeline")
-
-    # Event log: interleaved, grouped by week
-    all_weeks = sorted(set(e["week"] for e in l_events + r_events))
-    with st.container(height=350):
-        for week in all_weeks:
-            l_week_events = [e for e in l_events if e["week"] == week]
-            r_week_events = [e for e in r_events if e["week"] == week]
-            is_current = week == cmp_week + 1
-            opacity = "1.0" if week <= cmp_week + 1 else "0.4"
-            weight = "bold" if is_current else "normal"
-            bg = "background:rgba(41,128,185,0.15);" if is_current else ""
-
-            for e in l_week_events:
-                st.markdown(
-                    f'<div style="opacity:{opacity}; font-weight:{weight}; font-size:20px; margin-bottom:2px; {bg} padding:4px 6px; border-radius:4px">'
-                    f'<span style="color:{e["color"]}; font-weight:bold; min-width:40px; display:inline-block">W{e["week"]}</span> '
-                    f'<span style="color:#3498db; font-size:16px">▲{l_name}</span> '
-                    f'<span style="background:{e["color"]}33; color:{e["color"]}; padding:2px 8px; border-radius:4px; font-size:16px">{e["category"]}</span> '
-                    f'{e["label"]}'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
-            for e in r_week_events:
-                st.markdown(
-                    f'<div style="opacity:{opacity}; font-weight:{weight}; font-size:20px; margin-bottom:2px; {bg} padding:4px 6px; border-radius:4px">'
-                    f'<span style="color:{e["color"]}; font-weight:bold; min-width:40px; display:inline-block">W{e["week"]}</span> '
-                    f'<span style="color:#27ae60; font-size:16px">▼{r_name}</span> '
-                    f'<span style="background:{e["color"]}33; color:{e["color"]}; padding:2px 8px; border-radius:4px; font-size:16px">{e["category"]}</span> '
-                    f'{e["label"]}'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
 
 # ─── Synced week slider ──────────────────────────────────────────────────
 st.slider(
