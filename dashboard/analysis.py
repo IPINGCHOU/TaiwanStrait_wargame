@@ -86,7 +86,7 @@ def action_heatmap(history):
         yaxis_title="Action",
         height=400,
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def strategy_comparison(results_list, labels):
@@ -115,7 +115,7 @@ def strategy_comparison(results_list, labels):
         yaxis_title="Score",
         height=400,
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Total scores
     cols = st.columns(len(results_list))

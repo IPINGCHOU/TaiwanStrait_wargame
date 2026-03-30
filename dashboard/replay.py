@@ -103,7 +103,7 @@ def replay_widget(history, result, key_prefix="replay"):
             plot_bgcolor="rgba(0,0,0,0)",
             paper_bgcolor="rgba(0,0,0,0)",
         )
-        st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_events")
+        st.plotly_chart(fig, width="stretch", key=f"{key_prefix}_events")
 
     # Week slider
     st.slider(

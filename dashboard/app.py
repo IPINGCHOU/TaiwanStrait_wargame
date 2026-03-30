@@ -376,7 +376,7 @@ if l_events or r_events:
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
     )
-    st.plotly_chart(fig, use_container_width=True, key="compare_timeline")
+    st.plotly_chart(fig, width="stretch", key="compare_timeline")
 
 # ─── Synced week slider ──────────────────────────────────────────────────
 st.slider(
