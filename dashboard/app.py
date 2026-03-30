@@ -12,6 +12,8 @@ import plotly.graph_objects as go
 
 from dotenv import load_dotenv
 
+from dotenv import set_key
+
 load_dotenv()
 from dashboard.replay import run_game_and_record
 from dashboard.analysis import strategy_comparison, scenario_explorer_sidebar
@@ -21,6 +23,16 @@ from dashboard.events import detect_events
 
 st.set_page_config(page_title="Taiwan Strait Wargame", layout="wide")
 st.title("Taiwan Strait Blockade — Wargame Dashboard")
+
+# ─── Sidebar: OpenAI API Key ──────────────────────────────────────────────
+_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+_oai_key = os.getenv("OPENAI_API_KEY", "")
+_oai_input = st.sidebar.text_input("OpenAI API Key (embeddings)", value=_oai_key, type="password")
+if st.sidebar.button("Save API Key"):
+    set_key(_env_path, "OPENAI_API_KEY", _oai_input)
+    os.environ["OPENAI_API_KEY"] = _oai_input
+    st.sidebar.success("Saved to .env")
+st.sidebar.markdown("---")
 
 # ─── Sidebar: Scenario Customization ─────────────────────────────────────
 custom_scenario, sidebar_seed = scenario_explorer_sidebar()
