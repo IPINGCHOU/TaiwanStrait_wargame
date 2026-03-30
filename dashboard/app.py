@@ -387,6 +387,48 @@ st.slider(
     ),
 )
 
+# ─── Casualties & Losses ──────────────────────────────────────────────────
+st.markdown("---")
+st.markdown("### Casualties & Losses")
+
+_LOSS_FLEETS = [
+    ("PLAN Surface", "china_surface_ships", 60, "#e74c3c"),
+    ("PLAN Subs", "china_submarines", 20, "#c0392b"),
+    ("USN", "us_surface_ships", 24, "#2980b9"),
+    ("JMSDF", "japan_surface_ships", 20, "#3498db"),
+    ("ROC Navy", "taiwan_surface_ships", 26, "#27ae60"),
+]
+
+col_cl, col_cr = st.columns(2)
+for col_side, history, name, result in [
+    (col_cl, lh, l_name, lr),
+    (col_cr, rh, r_name, rr),
+]:
+    with col_side:
+        state = history[cmp_week]["state"]
+        st.markdown(f"**{name}** — Week {cmp_week + 1}")
+
+        # Naval losses as progress bars
+        for fleet_label, key, initial, color in _LOSS_FLEETS:
+            current = state.get(key, initial)
+            lost = max(0, initial - current)
+            frac = lost / initial if initial > 0 else 0
+            st.progress(min(frac, 1.0), text=f"{fleet_label}: {lost} lost / {initial}")
+
+        merchant_lost = state.get("merchant_ships_lost", 0)
+        st.progress(min(merchant_lost / 20.0, 1.0), text=f"Merchant: {merchant_lost} lost")
+
+        # Kill attribution + civilian casualties
+        c1, c2 = st.columns(2)
+        with c1:
+            cn_ships = state.get("china_ships_neutralized_by_jmsdf", 0)
+            cn_subs = state.get("china_subs_neutralized_by_jmsdf", 0)
+            st.markdown(f"**JMSDF kills:** {cn_ships} ships, {cn_subs} subs")
+        with c2:
+            civ = state.get("civilian_casualties", 0)
+            jp_civ = state.get("japan_civilian_casualties", 0)
+            st.markdown(f"**Civilians:** {civ:,.0f} (JP: {jp_civ:,.0f})")
+
 # ─── Score Breakdown with Footnotes ───────────────────────────────────────
 st.markdown("---")
 st.markdown("### Score Breakdown")
