@@ -258,10 +258,10 @@ if l_events or r_events:
             x=[e["week"] for e in l_events],
             y=[0.5] * len(l_events),
             mode="markers+text",
-            marker=dict(size=10, color=[e["color"] for e in l_events]),
+            marker=dict(size=14, color=[e["color"] for e in l_events]),
             text=[e["category"][0] for e in l_events],  # first letter
             textposition="top center",
-            textfont=dict(size=8, color="#aaa"),
+            textfont=dict(size=14, color="#aaa"),
             hovertext=[f"{l_name} W{e['week']}: {e['category']} — {e['label']}" for e in l_events],
             hoverinfo="text",
             showlegend=False,
@@ -274,10 +274,10 @@ if l_events or r_events:
             x=[e["week"] for e in r_events],
             y=[-0.5] * len(r_events),
             mode="markers+text",
-            marker=dict(size=10, color=[e["color"] for e in r_events]),
+            marker=dict(size=14, color=[e["color"] for e in r_events]),
             text=[e["category"][0] for e in r_events],
             textposition="bottom center",
-            textfont=dict(size=8, color="#aaa"),
+            textfont=dict(size=14, color="#aaa"),
             hovertext=[f"{r_name} W{e['week']}: {e['category']} — {e['label']}" for e in r_events],
             hoverinfo="text",
             showlegend=False,
@@ -291,23 +291,23 @@ if l_events or r_events:
     )
     fig.add_annotation(
         x=cmp_week + 1, y=1.3, text=f"W{cmp_week + 1} (current)",
-        showarrow=False, font=dict(size=8, color="#3498db"),
+        showarrow=False, font=dict(size=14, color="#3498db"),
     )
 
     fig.update_layout(
-        height=120,
+        height=180,
         margin=dict(l=10, r=10, t=5, b=5),
         yaxis=dict(
             visible=True, range=[-1.5, 1.5],
             tickvals=[0.5, -0.5],
             ticktext=[f"▲ {l_name}", f"▼ {r_name}"],
-            tickfont=dict(size=10),
+            tickfont=dict(size=14),
             showgrid=False, zeroline=False,
         ),
         xaxis=dict(range=[0, cmp_max + 1], showgrid=False, dtick=1,
                    tickvals=list(range(1, cmp_max + 2)),
                    ticktext=[f"W{i}" for i in range(1, cmp_max + 2)],
-                   tickfont=dict(size=8, color="#666")),
+                   tickfont=dict(size=14, color="#666")),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
     )
@@ -315,7 +315,7 @@ if l_events or r_events:
 
     # Event log: interleaved, grouped by week
     all_weeks = sorted(set(e["week"] for e in l_events + r_events))
-    with st.container(height=150):
+    with st.container(height=350):
         for week in all_weeks:
             l_week_events = [e for e in l_events if e["week"] == week]
             r_week_events = [e for e in r_events if e["week"] == week]
@@ -326,20 +326,20 @@ if l_events or r_events:
 
             for e in l_week_events:
                 st.markdown(
-                    f'<div style="opacity:{opacity}; font-weight:{weight}; font-size:12px; margin-bottom:1px; {bg} padding:2px 4px; border-radius:4px">'
-                    f'<span style="color:{e["color"]}; font-weight:bold; min-width:30px; display:inline-block">W{e["week"]}</span> '
-                    f'<span style="color:#3498db; font-size:10px">▲{l_name}</span> '
-                    f'<span style="background:{e["color"]}33; color:{e["color"]}; padding:1px 6px; border-radius:4px; font-size:10px">{e["category"]}</span> '
+                    f'<div style="opacity:{opacity}; font-weight:{weight}; font-size:20px; margin-bottom:2px; {bg} padding:4px 6px; border-radius:4px">'
+                    f'<span style="color:{e["color"]}; font-weight:bold; min-width:40px; display:inline-block">W{e["week"]}</span> '
+                    f'<span style="color:#3498db; font-size:16px">▲{l_name}</span> '
+                    f'<span style="background:{e["color"]}33; color:{e["color"]}; padding:2px 8px; border-radius:4px; font-size:16px">{e["category"]}</span> '
                     f'{e["label"]}'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
             for e in r_week_events:
                 st.markdown(
-                    f'<div style="opacity:{opacity}; font-weight:{weight}; font-size:12px; margin-bottom:1px; {bg} padding:2px 4px; border-radius:4px">'
-                    f'<span style="color:{e["color"]}; font-weight:bold; min-width:30px; display:inline-block">W{e["week"]}</span> '
-                    f'<span style="color:#27ae60; font-size:10px">▼{r_name}</span> '
-                    f'<span style="background:{e["color"]}33; color:{e["color"]}; padding:1px 6px; border-radius:4px; font-size:10px">{e["category"]}</span> '
+                    f'<div style="opacity:{opacity}; font-weight:{weight}; font-size:20px; margin-bottom:2px; {bg} padding:4px 6px; border-radius:4px">'
+                    f'<span style="color:{e["color"]}; font-weight:bold; min-width:40px; display:inline-block">W{e["week"]}</span> '
+                    f'<span style="color:#27ae60; font-size:16px">▼{r_name}</span> '
+                    f'<span style="background:{e["color"]}33; color:{e["color"]}; padding:2px 8px; border-radius:4px; font-size:16px">{e["category"]}</span> '
                     f'{e["label"]}'
                     f'</div>',
                     unsafe_allow_html=True,
