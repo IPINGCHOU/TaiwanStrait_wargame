@@ -210,33 +210,34 @@ for col_side, history, name, key_prefix in [
             st_folium(m, width=None, height=400, key=f"{key_prefix}_map_{cmp_week}")
 
         with status_col:
-            # Energy
-            st.markdown("**Energy**")
-            gas = state.get("taiwan_energy_gas", 0)
-            coal = state.get("taiwan_energy_coal", 0)
-            oil = state.get("taiwan_energy_oil", 0)
-            st.progress(min(gas / 10.0, 1.0), text=f"Gas: {gas:.1f}d")
-            st.progress(min(coal / 7.0, 1.0), text=f"Coal: {coal:.1f}w")
-            st.progress(min(oil / 20.0, 1.0), text=f"Oil: {oil:.1f}w")
-            st.text(f"Elec: {state.get('taiwan_electricity_pct', 100):.0f}%")
-            st.text(f"Econ: {state.get('taiwan_economy_pct', 100):.0f}%")
-            # Forces
-            st.markdown("---")
-            st.markdown("**Forces**")
-            st.text(f"PLAN: {state.get('china_surface_ships', 0)}/{state.get('china_submarines', 0)}")
-            st.text(f"USN: {state.get('us_surface_ships', 0)}/{state.get('us_submarines', 0)}")
-            st.text(f"JMSDF: {state.get('japan_surface_ships', 0)}/{state.get('japan_submarines', 0)}")
-            st.text(f"ROC: {state.get('taiwan_surface_ships', 0)}")
-            # Status
-            st.markdown("---")
-            st.markdown("**Status**")
-            st.text(f"Esc: {state.get('escalation_level', 0)}")
-            st.text(f"Blockade: {state.get('blockade_tightness', 0):.0%}")
-            st.text(f"Morale: {state.get('taiwan_morale', 0.8):.2f}")
-            okinawa = state.get("japan_base_okinawa", "closed")
-            kyushu = state.get("japan_base_kyushu", "closed")
-            st.text(f"Okinawa: {okinawa.upper()}")
-            st.text(f"Kyushu: {kyushu.upper()}")
+            with st.container(height=400):
+                # Energy
+                st.markdown("**Energy**")
+                gas = state.get("taiwan_energy_gas", 0)
+                coal = state.get("taiwan_energy_coal", 0)
+                oil = state.get("taiwan_energy_oil", 0)
+                st.progress(min(gas / 10.0, 1.0), text=f"Gas: {gas:.1f}d")
+                st.progress(min(coal / 7.0, 1.0), text=f"Coal: {coal:.1f}w")
+                st.progress(min(oil / 20.0, 1.0), text=f"Oil: {oil:.1f}w")
+                st.text(f"Elec: {state.get('taiwan_electricity_pct', 100):.0f}%")
+                st.text(f"Econ: {state.get('taiwan_economy_pct', 100):.0f}%")
+                # Forces
+                st.markdown("---")
+                st.markdown("**Forces**")
+                st.text(f"PLAN: {state.get('china_surface_ships', 0)}/{state.get('china_submarines', 0)}")
+                st.text(f"USN: {state.get('us_surface_ships', 0)}/{state.get('us_submarines', 0)}")
+                st.text(f"JMSDF: {state.get('japan_surface_ships', 0)}/{state.get('japan_submarines', 0)}")
+                st.text(f"ROC: {state.get('taiwan_surface_ships', 0)}")
+                # Status
+                st.markdown("---")
+                st.markdown("**Status**")
+                st.text(f"Esc: {state.get('escalation_level', 0)}")
+                st.text(f"Blockade: {state.get('blockade_tightness', 0):.0%}")
+                st.text(f"Morale: {state.get('taiwan_morale', 0.8):.2f}")
+                okinawa = state.get("japan_base_okinawa", "closed")
+                kyushu = state.get("japan_base_kyushu", "closed")
+                st.text(f"Okinawa: {okinawa.upper()}")
+                st.text(f"Kyushu: {kyushu.upper()}")
 
 # ─── Mirrored Event Timeline ─────────────────────────────────────────────
 l_events = detect_events(lh, result=lr)
@@ -287,6 +288,10 @@ if l_events or r_events:
     fig.add_shape(
         type="line", x0=cmp_week + 1, x1=cmp_week + 1, y0=-1.2, y1=1.2,
         line=dict(color="#3498db", width=2, dash="dot"),
+    )
+    fig.add_annotation(
+        x=cmp_week + 1, y=1.3, text=f"W{cmp_week + 1} (current)",
+        showarrow=False, font=dict(size=8, color="#3498db"),
     )
 
     fig.update_layout(
