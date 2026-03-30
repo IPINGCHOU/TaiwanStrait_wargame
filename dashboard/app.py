@@ -102,7 +102,7 @@ with col_vs:
         unsafe_allow_html=True,
     )
 with col_right:
-    right_default = min(len(version_names) - 1, 1)
+    right_default = len(version_names) - 1  # default to "best" (last entry)
     right_idx = st.selectbox("Right strategy", range(len(version_names)),
                               format_func=lambda i: version_names[i],
                               index=right_default,
