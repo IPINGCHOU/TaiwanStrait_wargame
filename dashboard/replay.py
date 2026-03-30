@@ -34,11 +34,19 @@ def run_game_and_record(scenario, japan_strategy_fn, seed=0):
     return history, game.get_result()
 
 
+# Nation config: (label, flag, key, border_color)
+_NATIONS = [
+    ("China", "cn", "china", "#e74c3c"),
+    ("Taiwan", "tw", "taiwan", "#27ae60"),
+    ("US", "us", "us", "#2980b9"),
+    ("Japan", "jp", "japan", "#3498db"),
+]
+
+
 def replay_widget(history, result, key_prefix="replay"):
-    """Streamlit widget: Folium map + action log + side panels + week slider."""
+    """Streamlit widget: action cards + map/status + timeline."""
     max_week = len(history) - 1
 
-    # Slider state — use session_state so we can place the slider widget below
     if f"{key_prefix}_week_val" not in st.session_state:
         st.session_state[f"{key_prefix}_week_val"] = 0
     week_idx = st.session_state[f"{key_prefix}_week_val"]
@@ -54,57 +62,20 @@ def replay_widget(history, result, key_prefix="replay"):
         f"Escalation Level {state.get('escalation_level', 0)}"
     )
 
-    # Row 1: Map + Action Log
-    col_map, col_actions = st.columns([2, 1])
+    # Row 1: Horizontal action cards
+    _render_action_cards(all_actions, state.get("week", 1))
+
+    # Row 2: Map + Status sidebar
+    col_map, col_status = st.columns([2, 1])
 
     with col_map:
         m = render_map(state, all_actions)
         st_folium(m, width=None, height=500, key=f"{key_prefix}_map_{week_idx}")
 
-    with col_actions:
-        _render_action_log(all_actions, state.get("week", 1))
+    with col_status:
+        _render_status_sidebar(state)
 
-    # Row 2: Energy / Forces / Status panels
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown("**Energy**")
-        gas = state.get("taiwan_energy_gas", 0)
-        coal = state.get("taiwan_energy_coal", 0)
-        oil = state.get("taiwan_energy_oil", 0)
-        st.progress(min(gas / 10.0, 1.0), text=f"Gas: {gas:.1f} days")
-        st.progress(min(coal / 7.0, 1.0), text=f"Coal: {coal:.1f} weeks")
-        st.progress(min(oil / 20.0, 1.0), text=f"Oil: {oil:.1f} weeks")
-        st.metric("Electricity", f"{state.get('taiwan_electricity_pct', 100):.0f}%")
-        st.metric("Economy", f"{state.get('taiwan_economy_pct', 100):.0f}%")
-
-    with col2:
-        st.markdown("**Forces**")
-        forces = {
-            "PLAN Surface": state.get("china_surface_ships", 0),
-            "PLAN Subs": state.get("china_submarines", 0),
-            "USN Surface": state.get("us_surface_ships", 0),
-            "USN Subs": state.get("us_submarines", 0),
-            "JMSDF Surface": state.get("japan_surface_ships", 0),
-            "JMSDF Subs": state.get("japan_submarines", 0),
-            "ROC Navy": state.get("taiwan_surface_ships", 0),
-        }
-        for name, count in forces.items():
-            st.text(f"{name}: {count}")
-
-    with col3:
-        st.markdown("**Status**")
-        st.metric("Escalation", state.get("escalation_level", 0))
-        st.metric("Blockade", f"{state.get('blockade_tightness', 0):.0%}")
-        st.metric("TW Morale", f"{state.get('taiwan_morale', 0.8):.2f}")
-        st.metric("World Opinion", f"{state.get('world_opinion', 0):.2f}")
-
-        okinawa = state.get("japan_base_okinawa", "closed")
-        kyushu = state.get("japan_base_kyushu", "closed")
-        st.text(f"Okinawa: {okinawa.upper()}")
-        st.text(f"Kyushu: {kyushu.upper()}")
-
-    # Row 3: Week slider (below panels per spec layout)
+    # Row 3: Week slider
     st.slider(
         "Week", 0, max_week, week_idx,
         key=f"{key_prefix}_week",
@@ -113,7 +84,7 @@ def replay_widget(history, result, key_prefix="replay"):
         ),
     )
 
-    # Row 4: Game result summary on final week
+    # Row 4: Game result on final week
     if week_idx == max_week:
         survived = result["taiwan_survived"]
         score = result["score"]["total"]
@@ -123,25 +94,63 @@ def replay_widget(history, result, key_prefix="replay"):
             st.error(f"Taiwan Surrendered at Week {result['weeks']} — Score: {score:.0f}")
 
 
-def _render_action_log(all_actions, week):
-    """Render the 4-nation action log in a chat-like column."""
-    st.markdown(f"**Week {week} Actions**")
-
-    if all_actions is None:
-        st.caption("No actions this turn")
-        return
-
-    nations = [
-        ("China", "cn", "china"),
-        ("US", "us", "us"),
-        ("Japan", "jp", "japan"),
-        ("Taiwan", "tw", "taiwan"),
-    ]
-    for label, flag, key in nations:
-        actions = all_actions.get(key, {})
-        with st.expander(f":flag-{flag}: {label}", expanded=True):
+def _render_action_cards(all_actions, week):
+    """Render 4 horizontal action cards in st.columns(4)."""
+    cols = st.columns(4)
+    for col, (label, flag, key, color) in zip(cols, _NATIONS):
+        with col:
+            st.markdown(
+                f'<div style="border-left:3px solid {color}; padding-left:8px">'
+                f'<strong>:flag-{flag}: {label}</strong></div>',
+                unsafe_allow_html=True,
+            )
+            if all_actions is None:
+                st.caption("No actions")
+                continue
+            actions = all_actions.get(key, {})
             for k, v in sorted(actions.items()):
                 if isinstance(v, float):
                     st.text(f"{k}: {v:.2f}")
                 else:
                     st.text(f"{k}: {v}")
+
+
+def _render_status_sidebar(state):
+    """Render Energy / Forces / Status panels stacked vertically."""
+    # Energy
+    st.markdown("**Energy**")
+    gas = state.get("taiwan_energy_gas", 0)
+    coal = state.get("taiwan_energy_coal", 0)
+    oil = state.get("taiwan_energy_oil", 0)
+    st.progress(min(gas / 10.0, 1.0), text=f"Gas: {gas:.1f} days")
+    st.progress(min(coal / 7.0, 1.0), text=f"Coal: {coal:.1f} weeks")
+    st.progress(min(oil / 20.0, 1.0), text=f"Oil: {oil:.1f} weeks")
+    st.text(f"Electricity: {state.get('taiwan_electricity_pct', 100):.0f}%")
+    st.text(f"Economy: {state.get('taiwan_economy_pct', 100):.0f}%")
+
+    # Forces
+    st.markdown("---")
+    st.markdown("**Forces**")
+    forces = [
+        ("PLAN Surface", "china_surface_ships", "#e74c3c"),
+        ("PLAN Subs", "china_submarines", "#e74c3c"),
+        ("USN Surface", "us_surface_ships", "#2980b9"),
+        ("USN Subs", "us_submarines", "#2980b9"),
+        ("JMSDF Surface", "japan_surface_ships", "#3498db"),
+        ("JMSDF Subs", "japan_submarines", "#3498db"),
+        ("ROC Navy", "taiwan_surface_ships", "#27ae60"),
+    ]
+    for name, key, _color in forces:
+        st.text(f"{name}: {state.get(key, 0)}")
+
+    # Status
+    st.markdown("---")
+    st.markdown("**Status**")
+    st.text(f"Escalation: {state.get('escalation_level', 0)}")
+    st.text(f"Blockade: {state.get('blockade_tightness', 0):.0%}")
+    st.text(f"TW Morale: {state.get('taiwan_morale', 0.8):.2f}")
+    st.text(f"World Opinion: {state.get('world_opinion', 0):.2f}")
+    okinawa = state.get("japan_base_okinawa", "closed")
+    kyushu = state.get("japan_base_kyushu", "closed")
+    st.text(f"Okinawa: {okinawa.upper()}")
+    st.text(f"Kyushu: {kyushu.upper()}")
