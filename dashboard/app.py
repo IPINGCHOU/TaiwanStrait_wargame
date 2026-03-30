@@ -391,12 +391,12 @@ st.slider(
 st.markdown("---")
 st.markdown("### Casualties & Losses")
 
-_LOSS_FLEETS = [
-    ("PLAN Surface", "china_surface_ships", 60, "#e74c3c"),
-    ("PLAN Subs", "china_submarines", 20, "#c0392b"),
-    ("USN", "us_surface_ships", 24, "#2980b9"),
-    ("JMSDF", "japan_surface_ships", 20, "#3498db"),
-    ("ROC Navy", "taiwan_surface_ships", 26, "#27ae60"),
+_LOSS_FLEET_KEYS = [
+    ("PLAN Surface", "china_surface_ships"),
+    ("PLAN Subs", "china_submarines"),
+    ("USN", "us_surface_ships"),
+    ("JMSDF", "japan_surface_ships"),
+    ("ROC Navy", "taiwan_surface_ships"),
 ]
 
 col_cl, col_cr = st.columns(2)
@@ -406,11 +406,13 @@ for col_side, history, name, result in [
 ]:
     with col_side:
         state = history[cmp_week]["state"]
+        initial_state = history[0]["state"]
         st.markdown(f"**{name}** — Week {cmp_week + 1}")
 
-        # Naval losses as progress bars
-        for fleet_label, key, initial, color in _LOSS_FLEETS:
-            current = state.get(key, initial)
+        # Naval losses as progress bars (compare against actual initial state)
+        for fleet_label, key in _LOSS_FLEET_KEYS:
+            initial = initial_state.get(key, 0)
+            current = state.get(key, 0)
             lost = max(0, initial - current)
             frac = lost / initial if initial > 0 else 0
             st.progress(min(frac, 1.0), text=f"{fleet_label}: {lost} lost / {initial}")
