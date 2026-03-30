@@ -127,15 +127,36 @@ def strategy_comparison(results_list, labels):
 def scenario_explorer_sidebar():
     """Render preset selector and parameter sliders in sidebar.
 
-    Returns a scenario config dict.
+    Returns a tuple of (scenario config dict, seed int).
     """
-    from wargame.scenarios import UI_PRESETS
+    from wargame.scenarios import UI_PRESETS, EVALUATION_SCENARIOS
 
-    preset_names = [p["name"] for p in UI_PRESETS]
-    preset_idx = st.sidebar.selectbox("Preset", range(len(preset_names)),
-                                       format_func=lambda i: preset_names[i])
-    preset = UI_PRESETS[preset_idx]
+    # Merge evaluation scenarios (marked) + UI presets into one list
+    all_presets = []
+    eval_names = set()
+    for s in EVALUATION_SCENARIOS:
+        preset = dict(s)
+        preset["_trained"] = True
+        all_presets.append(preset)
+        eval_names.add(s["name"])
+    for p in UI_PRESETS:
+        if p["name"] not in eval_names:
+            all_presets.append(p)
 
+    def _format_preset(i):
+        name = all_presets[i]["name"]
+        if all_presets[i].get("_trained"):
+            return f"{name} (Shinka trained on this)"
+        return name
+
+    preset_idx = st.sidebar.selectbox("Scenario Preset", range(len(all_presets)),
+                                       format_func=_format_preset)
+    preset = all_presets[preset_idx]
+
+    st.sidebar.markdown("---")
+
+    # Seed
+    seed = st.sidebar.number_input("Seed", 0, 100, 0, key="sidebar_seed")
     st.sidebar.markdown("---")
     st.sidebar.markdown("### China")
     china_profile = st.sidebar.selectbox("China Profile",
@@ -174,7 +195,7 @@ def scenario_explorer_sidebar():
     japan_subs = st.sidebar.slider("Japan Submarines", 2, 12,
                                     preset.get("japan_submarines", 6))
 
-    return {
+    scenario = {
         "name": "custom",
         "china_profile": china_profile,
         "us_profile": us_profile,
@@ -188,3 +209,4 @@ def scenario_explorer_sidebar():
         "japan_surface_ships": japan_surface,
         "japan_submarines": japan_subs,
     }
+    return scenario, seed

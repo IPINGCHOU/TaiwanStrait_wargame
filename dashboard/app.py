@@ -10,11 +10,9 @@ import streamlit as st
 from streamlit_folium import st_folium
 import plotly.graph_objects as go
 
-from dotenv import load_dotenv, set_key
+from dotenv import load_dotenv
 
 load_dotenv()
-
-from wargame.scenarios import EVALUATION_SCENARIOS
 from dashboard.replay import run_game_and_record
 from dashboard.analysis import strategy_comparison, scenario_explorer_sidebar
 from dashboard.versions import discover_versions, load_strategy
@@ -24,26 +22,8 @@ from dashboard.events import detect_events
 st.set_page_config(page_title="Taiwan Strait Wargame", layout="wide")
 st.title("Taiwan Strait Blockade — Wargame Dashboard")
 
-# ─── Sidebar: API Keys ───────────────────────────────────────────────────
-st.sidebar.markdown("### API Configuration")
-_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
-
-_ds_key = os.getenv("DEEPSEEK_API_KEY", "")
-_ds_input = st.sidebar.text_input("DeepSeek API Key (LLM)", value=_ds_key, type="password")
-
-_oai_key = os.getenv("OPENAI_API_KEY", "")
-_oai_input = st.sidebar.text_input("OpenAI API Key (embeddings)", value=_oai_key, type="password")
-
-if st.sidebar.button("Save API Keys"):
-    set_key(_env_path, "DEEPSEEK_API_KEY", _ds_input)
-    set_key(_env_path, "OPENAI_API_KEY", _oai_input)
-    os.environ["DEEPSEEK_API_KEY"] = _ds_input
-    os.environ["OPENAI_API_KEY"] = _oai_input
-    st.sidebar.success("Saved to .env")
-st.sidebar.markdown("---")
-
 # ─── Sidebar: Scenario Customization ─────────────────────────────────────
-custom_scenario = scenario_explorer_sidebar()
+custom_scenario, sidebar_seed = scenario_explorer_sidebar()
 
 # ─── Nation config ────────────────────────────────────────────────────────
 _NATIONS = [
@@ -76,7 +56,6 @@ _SCORE_FOOTNOTES = [
 ]
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-scenario_names = [s["name"] for s in EVALUATION_SCENARIOS]
 
 # ─── Main: Compare & Explore ─────────────────────────────────────────────
 
@@ -108,22 +87,7 @@ with col_right:
                               index=right_default,
                               key="compare_right")
 
-# Scenario + Seed + Run
-col_sc, col_seed, col_run = st.columns([4, 2, 2])
-with col_sc:
-    cmp_scenario_idx = st.selectbox(
-        "Scenario", range(len(scenario_names)),
-        format_func=lambda i: scenario_names[i],
-        key="compare_scenario",
-    )
-with col_seed:
-    cmp_seed = st.number_input("Seed", 0, 100, 0, key="compare_seed")
-with col_run:
-    st.markdown("<div style='padding-top:28px'></div>", unsafe_allow_html=True)
-    run_clicked = st.button("Run Both", key="run_compare")
-
-# Use custom scenario from sidebar, or preset from dropdown
-use_custom = st.checkbox("Use sidebar custom scenario", value=False, key="use_custom_scenario")
+run_clicked = st.button("Run Both", key="run_compare")
 
 if run_clicked:
     left_fn = load_strategy(versions[left_idx]["path"])
@@ -134,11 +98,10 @@ if run_clicked:
     elif right_fn is None:
         st.error(f"Failed to load: {versions[right_idx]['name']}")
     else:
-        scenario = custom_scenario if use_custom else EVALUATION_SCENARIOS[cmp_scenario_idx]
         with st.spinner("Running left strategy..."):
-            lh, lr = run_game_and_record(scenario, left_fn, cmp_seed)
+            lh, lr = run_game_and_record(custom_scenario, left_fn, sidebar_seed)
         with st.spinner("Running right strategy..."):
-            rh, rr = run_game_and_record(scenario, right_fn, cmp_seed)
+            rh, rr = run_game_and_record(custom_scenario, right_fn, sidebar_seed)
         st.session_state["compare_left_history"] = lh
         st.session_state["compare_left_result"] = lr
         st.session_state["compare_right_history"] = rh
