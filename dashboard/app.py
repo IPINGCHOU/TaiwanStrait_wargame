@@ -420,16 +420,10 @@ for col_side, history, name, result in [
         merchant_lost = state.get("merchant_ships_lost", 0)
         st.progress(min(merchant_lost / 20.0, 1.0), text=f"Merchant: {merchant_lost} lost")
 
-        # Kill attribution + civilian casualties
-        c1, c2 = st.columns(2)
-        with c1:
-            cn_ships = state.get("china_ships_neutralized_by_jmsdf", 0)
-            cn_subs = state.get("china_subs_neutralized_by_jmsdf", 0)
-            st.markdown(f"**JMSDF kills:** {cn_ships} ships, {cn_subs} subs")
-        with c2:
-            civ = state.get("civilian_casualties", 0)
-            jp_civ = state.get("japan_civilian_casualties", 0)
-            st.markdown(f"**Civilians:** {civ:,.0f} (JP: {jp_civ:,.0f})")
+        # Kill attribution (only china_subs_by_jmsdf is tracked by engine)
+        cn_subs = state.get("china_subs_neutralized_by_jmsdf", 0)
+        if cn_subs > 0:
+            st.markdown(f"**JMSDF ASW kills:** {cn_subs} Chinese subs neutralized")
 
 # ─── Score Breakdown with Footnotes ───────────────────────────────────────
 st.markdown("---")
