@@ -297,6 +297,13 @@ if l_events or r_events:
             showlegend=False,
         ))
 
+    def _rgba(hex_color, alpha):
+        """Convert '#rrggbb' to 'rgba(r,g,b,alpha)'."""
+        r = int(hex_color[1:3], 16)
+        g = int(hex_color[3:5], 16)
+        b = int(hex_color[5:7], 16)
+        return f"rgba({r},{g},{b},{alpha})"
+
     # Left labels with guide lines (above)
     for e, label_y in zip(l_events, l_ys):
         is_outcome = e["category"] == "OUTCOME"
@@ -304,7 +311,7 @@ if l_events or r_events:
             x=e["week"], y=label_y,
             text=f"<b>{e['label']}</b>" if is_outcome else e["label"],
             showarrow=True,
-            arrowhead=0, arrowwidth=1, arrowcolor=e["color"] + "66",
+            arrowhead=0, arrowwidth=1, arrowcolor=_rgba(e["color"], 0.4),
             ax=0, ay=0,
             xanchor="center", yanchor="bottom",
             font=dict(size=12, color=e["color"]),
@@ -313,7 +320,7 @@ if l_events or r_events:
         fig.add_shape(
             type="line", x0=e["week"], x1=e["week"],
             y0=0.3, y1=label_y - 0.1,
-            line=dict(color=e["color"] + "44", width=1),
+            line=dict(color=_rgba(e["color"], 0.25), width=1),
         )
 
     # Right labels with guide lines (below)
@@ -323,7 +330,7 @@ if l_events or r_events:
             x=e["week"], y=label_y,
             text=f"<b>{e['label']}</b>" if is_outcome else e["label"],
             showarrow=True,
-            arrowhead=0, arrowwidth=1, arrowcolor=e["color"] + "66",
+            arrowhead=0, arrowwidth=1, arrowcolor=_rgba(e["color"], 0.4),
             ax=0, ay=0,
             xanchor="center", yanchor="top",
             font=dict(size=12, color=e["color"]),
@@ -331,7 +338,7 @@ if l_events or r_events:
         fig.add_shape(
             type="line", x0=e["week"], x1=e["week"],
             y0=-0.3, y1=label_y + 0.1,
-            line=dict(color=e["color"] + "44", width=1),
+            line=dict(color=_rgba(e["color"], 0.25), width=1),
         )
 
     # Current week indicator
