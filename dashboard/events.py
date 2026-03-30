@@ -21,7 +21,14 @@ _MORALE_THRESHOLDS = [0.5, 0.3]
 _FORCE_LOSS_THRESHOLD = 3
 
 
-def detect_events(history):
+def detect_events(history, result=None):
+    """Scan game history and return a list of significant event dicts.
+
+    Args:
+        history: list of {"state": dict, "all_actions": dict} entries
+        result: game result dict (from WarGame.get_result()) — used for
+                taiwan_survived which is NOT stored in state dicts.
+    """
     if not history:
         return []
 
@@ -45,10 +52,17 @@ def detect_events(history):
             _check_morale(events, state, prev_state, week)
 
         if i == len(history) - 1:
-            survived = state.get("taiwan_survived", True)
+            if result is not None:
+                survived = result.get("taiwan_survived", True)
+                # Use result["weeks"] for accurate week (state["week"] is
+                # incremented past the last played week after game ends)
+                outcome_week = result.get("weeks", week)
+            else:
+                survived = state.get("taiwan_survived", True)
+                outcome_week = week
             label = "Taiwan survived" if survived else "Taiwan surrendered"
             events.append({
-                "week": week,
+                "week": outcome_week,
                 "category": "OUTCOME",
                 "label": label,
                 "color": "#9b59b6",

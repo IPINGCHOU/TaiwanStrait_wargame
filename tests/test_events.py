@@ -140,15 +140,26 @@ def test_morale_drop_event():
     assert "0.5" in morale[0]["label"] or "50%" in morale[0]["label"]
 
 
-def test_outcome_event():
-    history = _make_history([
-        _make_state(week=1),
-    ])
-    history[-1]["state"]["taiwan_survived"] = True
-    events = detect_events(history)
+def test_outcome_survived_from_result():
+    """OUTCOME uses result dict, not state (taiwan_survived not in state)."""
+    history = _make_history([_make_state(week=1)])
+    result = {"taiwan_survived": True}
+    events = detect_events(history, result=result)
     outcome = [e for e in events if e["category"] == "OUTCOME"]
     assert len(outcome) == 1
     assert "survived" in outcome[0]["label"].lower()
+
+
+def test_outcome_surrendered_from_result():
+    """OUTCOME correctly shows surrender at the right week from result."""
+    # Final state has week=18 (incremented), but result says 17 weeks played
+    history = _make_history([_make_state(week=18)])
+    result = {"taiwan_survived": False, "weeks": 17}
+    events = detect_events(history, result=result)
+    outcome = [e for e in events if e["category"] == "OUTCOME"]
+    assert len(outcome) == 1
+    assert "surrendered" in outcome[0]["label"].lower()
+    assert outcome[0]["week"] == 17  # uses result["weeks"], not state["week"]
 
 
 def test_single_entry_history():

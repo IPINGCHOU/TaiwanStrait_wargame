@@ -78,7 +78,7 @@ def replay_widget(history, result, key_prefix="replay"):
         _render_status_sidebar(state)
 
     # Row 3: Timeline with event markers + event log
-    events = detect_events(history)
+    events = detect_events(history, result=result)
 
     # Plotly scatter strip for event markers
     if events:
