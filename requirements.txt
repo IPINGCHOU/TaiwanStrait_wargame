@@ -1,6 +1,6 @@
 numpy>=1.24
 pytest>=7.0
-streamlit>=1.30
+streamlit>=1.33
 matplotlib>=3.7
 plotly>=5.15
 openai>=1.0
