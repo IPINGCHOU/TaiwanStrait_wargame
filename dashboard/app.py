@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 from streamlit_folium import st_folium
+import plotly.graph_objects as go
 
 from dotenv import load_dotenv, set_key
 
@@ -236,6 +237,108 @@ for col_side, history, name, key_prefix in [
             kyushu = state.get("japan_base_kyushu", "closed")
             st.text(f"Okinawa: {okinawa.upper()}")
             st.text(f"Kyushu: {kyushu.upper()}")
+
+# ─── Mirrored Event Timeline ─────────────────────────────────────────────
+l_events = detect_events(lh, result=lr)
+r_events = detect_events(rh, result=rr)
+
+if l_events or r_events:
+    fig = go.Figure()
+
+    # Center line
+    fig.add_shape(
+        type="line", x0=0, x1=cmp_max + 1, y0=0, y1=0,
+        line=dict(color="#555", width=1),
+    )
+
+    # Left strategy events ABOVE the line (y > 0)
+    if l_events:
+        fig.add_trace(go.Scatter(
+            x=[e["week"] for e in l_events],
+            y=[0.5] * len(l_events),
+            mode="markers+text",
+            marker=dict(size=10, color=[e["color"] for e in l_events]),
+            text=[e["category"][0] for e in l_events],  # first letter
+            textposition="top center",
+            textfont=dict(size=8, color="#aaa"),
+            hovertext=[f"{l_name} W{e['week']}: {e['category']} — {e['label']}" for e in l_events],
+            hoverinfo="text",
+            showlegend=False,
+            name=l_name,
+        ))
+
+    # Right strategy events BELOW the line (y < 0)
+    if r_events:
+        fig.add_trace(go.Scatter(
+            x=[e["week"] for e in r_events],
+            y=[-0.5] * len(r_events),
+            mode="markers+text",
+            marker=dict(size=10, color=[e["color"] for e in r_events]),
+            text=[e["category"][0] for e in r_events],
+            textposition="bottom center",
+            textfont=dict(size=8, color="#aaa"),
+            hovertext=[f"{r_name} W{e['week']}: {e['category']} — {e['label']}" for e in r_events],
+            hoverinfo="text",
+            showlegend=False,
+            name=r_name,
+        ))
+
+    # Current week indicator
+    fig.add_shape(
+        type="line", x0=cmp_week + 1, x1=cmp_week + 1, y0=-1.2, y1=1.2,
+        line=dict(color="#3498db", width=2, dash="dot"),
+    )
+
+    # Labels for left/right
+    fig.add_annotation(x=-0.3, y=0.5, text=f"▲ {l_name}", showarrow=False,
+                       font=dict(size=9, color="#3498db"), xanchor="right")
+    fig.add_annotation(x=-0.3, y=-0.5, text=f"▼ {r_name}", showarrow=False,
+                       font=dict(size=9, color="#27ae60"), xanchor="right")
+
+    fig.update_layout(
+        height=120,
+        margin=dict(l=100, r=10, t=5, b=5),
+        xaxis=dict(range=[0, cmp_max + 1], showgrid=False, dtick=1,
+                   tickvals=list(range(1, cmp_max + 2)),
+                   ticktext=[f"W{i}" for i in range(1, cmp_max + 2)],
+                   tickfont=dict(size=8, color="#666")),
+        yaxis=dict(visible=False, range=[-1.5, 1.5]),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+    )
+    st.plotly_chart(fig, use_container_width=True, key="compare_timeline")
+
+    # Event log: interleaved, grouped by week
+    all_weeks = sorted(set(e["week"] for e in l_events + r_events))
+    with st.container(height=150):
+        for week in all_weeks:
+            l_week_events = [e for e in l_events if e["week"] == week]
+            r_week_events = [e for e in r_events if e["week"] == week]
+            is_current = week == cmp_week + 1
+            opacity = "1.0" if week <= cmp_week + 1 else "0.4"
+            weight = "bold" if is_current else "normal"
+            bg = "background:rgba(41,128,185,0.15);" if is_current else ""
+
+            for e in l_week_events:
+                st.markdown(
+                    f'<div style="opacity:{opacity}; font-weight:{weight}; font-size:12px; margin-bottom:1px; {bg} padding:2px 4px; border-radius:4px">'
+                    f'<span style="color:{e["color"]}; font-weight:bold; min-width:30px; display:inline-block">W{e["week"]}</span> '
+                    f'<span style="color:#3498db; font-size:10px">▲{l_name}</span> '
+                    f'<span style="background:{e["color"]}33; color:{e["color"]}; padding:1px 6px; border-radius:4px; font-size:10px">{e["category"]}</span> '
+                    f'{e["label"]}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            for e in r_week_events:
+                st.markdown(
+                    f'<div style="opacity:{opacity}; font-weight:{weight}; font-size:12px; margin-bottom:1px; {bg} padding:2px 4px; border-radius:4px">'
+                    f'<span style="color:{e["color"]}; font-weight:bold; min-width:30px; display:inline-block">W{e["week"]}</span> '
+                    f'<span style="color:#27ae60; font-size:10px">▼{r_name}</span> '
+                    f'<span style="background:{e["color"]}33; color:{e["color"]}; padding:1px 6px; border-radius:4px; font-size:10px">{e["category"]}</span> '
+                    f'{e["label"]}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
 # ─── Synced week slider ──────────────────────────────────────────────────
 st.slider(
