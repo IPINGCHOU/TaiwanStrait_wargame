@@ -3,6 +3,7 @@
 import os
 import re
 import importlib.util
+import sqlite3
 
 
 _EARLY_GENS = {0, 1, 5, 10}
@@ -47,16 +48,36 @@ def discover_versions(project_root, show_all=False):
                     "type": "generation",
                 })
 
-    # 3. Best
+    # 3. Best (look up generation number from SQLite DB)
     best_path = os.path.join(results_dir, "best", "main.py")
     if os.path.isfile(best_path):
+        best_gen = _find_best_generation(results_dir)
+        best_name = f"best (gen_{best_gen})" if best_gen is not None else "best"
         versions.append({
-            "name": "best",
+            "name": best_name,
             "path": best_path,
             "type": "best",
         })
 
     return versions
+
+
+def _find_best_generation(results_dir):
+    """Look up the generation number of the best program from the SQLite DB."""
+    db_path = os.path.join(results_dir, "programs.sqlite")
+    if not os.path.isfile(db_path):
+        return None
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT generation FROM programs ORDER BY combined_score DESC LIMIT 1"
+        )
+        row = cursor.fetchone()
+        conn.close()
+        return row[0] if row else None
+    except Exception:
+        return None
 
 
 def load_strategy(path):

@@ -21,7 +21,7 @@ def test_discover_versions_finds_best():
     project_root = os.path.join(os.path.dirname(__file__), "..")
     versions = discover_versions(project_root)
     names = [v["name"] for v in versions]
-    assert names[-1] == "best"
+    assert names[-1].startswith("best")
     assert versions[-1]["type"] == "best"
 
 
