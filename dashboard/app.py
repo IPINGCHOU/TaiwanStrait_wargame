@@ -289,20 +289,20 @@ if l_events or r_events:
         line=dict(color="#3498db", width=2, dash="dot"),
     )
 
-    # Labels for left/right
-    fig.add_annotation(x=-0.3, y=0.5, text=f"▲ {l_name}", showarrow=False,
-                       font=dict(size=9, color="#3498db"), xanchor="right")
-    fig.add_annotation(x=-0.3, y=-0.5, text=f"▼ {r_name}", showarrow=False,
-                       font=dict(size=9, color="#27ae60"), xanchor="right")
-
     fig.update_layout(
         height=120,
-        margin=dict(l=100, r=10, t=5, b=5),
+        margin=dict(l=10, r=10, t=5, b=5),
+        yaxis=dict(
+            visible=True, range=[-1.5, 1.5],
+            tickvals=[0.5, -0.5],
+            ticktext=[f"▲ {l_name}", f"▼ {r_name}"],
+            tickfont=dict(size=10),
+            showgrid=False, zeroline=False,
+        ),
         xaxis=dict(range=[0, cmp_max + 1], showgrid=False, dtick=1,
                    tickvals=list(range(1, cmp_max + 2)),
                    ticktext=[f"W{i}" for i in range(1, cmp_max + 2)],
                    tickfont=dict(size=8, color="#666")),
-        yaxis=dict(visible=False, range=[-1.5, 1.5]),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
     )
