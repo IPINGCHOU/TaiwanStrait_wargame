@@ -2,8 +2,7 @@
 
 evo_config:
   llm_models:
-    - "deepseek-chat"
-  llm_dynamic_selection: null
+    - "gpt-5-mini"
   code_embed_sim_threshold: 0.85
   max_novelty_attempts: 5
 

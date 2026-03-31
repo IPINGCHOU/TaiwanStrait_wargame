@@ -1,6 +1,6 @@
 # shinka-wargame
 
-Evolving Japan's coalition strategy for a Taiwan Strait naval blockade using [ShinkaEvolve](https://github.com/SakanaAI/ShinkaEvolve).
+Evolving Japan's coalition strategy for a Taiwan Strait naval blockade using [ShinkaEvolve](https://pypi.org/project/shinka-evolve/).
 
 ## Overview
 
