@@ -39,7 +39,7 @@ print(f"Score: {result['score']['total']}, Survived: {result['taiwan_survived']}
 ### Run ShinkaEvolve evolution
 
 ```bash
-export DEEPSEEK_API_KEY="your-key"
+export OPENAI_API_KEY="your-key"
 shinka run --config shinka_task/shinka_config.yaml
 ```
 
