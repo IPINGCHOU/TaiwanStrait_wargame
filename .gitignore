@@ -11,3 +11,4 @@ shinka_task/.shinka/
 .DS_Store
 .venv/
 results/
+!results/best/

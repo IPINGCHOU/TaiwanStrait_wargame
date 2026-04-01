@@ -1,0 +1,14 @@
+{
+  "generation": 596,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "momentum_inertia_response",
+  "patch_description": "Improve responsiveness of the adaptive smoothing / momentum controller so the planner reacts faster in high-urgency or trending situations while preserving stability in calmer circumstances.\n\nChanges:\n- Lowered inertia floors so the controller can react quicker during crises.\n- Make inertia sensitive not only to threat trend/distance but also to recent cargo_urgency trend (seeded in runtime_state). This lets Japan respond faster when logistics signals change quickly.\n- Slightly adjusted numeric floors to prevent pathological near-zero values while enabling faster adaptation.\n\nRationale:\nThe prior controller used somewhat conservative inertia floors which limited responsiveness in critical scenarios (e.g., rapid cargo deterioration or rising threat). Making inertia adapt to cargo trend as well as threat trend reduces lag in reallocation (especially ASW/escort decisions) which should improve performance across scenarios where timely reactions matter.\n\nOnly the MomentumController block is modified; other behavior and parameters remain unchanged to preserve correctness and compatibility.",
+  "error_msg": null,
+  "timestamp": "2026-03-25T14:41:53.961290",
+  "llm_cost": 0.009866999999999999,
+  "llm_model": null
+}

@@ -1,0 +1,118 @@
+<NAME>
+momentum_inertia_response
+</NAME>
+
+<DESCRIPTION>
+Improve responsiveness of the adaptive smoothing / momentum controller so the planner reacts faster in high-urgency or trending situations while preserving stability in calmer circumstances.
+
+Changes:
+- Lowered inertia floors so the controller can react quicker during crises.
+- Make inertia sensitive not only to threat trend/distance but also to recent cargo_urgency trend (seeded in runtime_state). This lets Japan respond faster when logistics signals change quickly.
+- Slightly adjusted numeric floors to prevent pathological near-zero values while enabling faster adaptation.
+
+Rationale:
+The prior controller used somewhat conservative inertia floors which limited responsiveness in critical scenarios (e.g., rapid cargo deterioration or rising threat). Making inertia adapt to cargo trend as well as threat trend reduces lag in reallocation (especially ASW/escort decisions) which should improve performance across scenarios where timely reactions matter.
+
+Only the MomentumController block is modified; other behavior and parameters remain unchanged to preserve correctness and compatibility.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+# -----------------------
+# Momentum / smoothing controller
+# -----------------------
+class MomentumController:
+    """Encapsulate adaptive alpha/inertia and smoothing to keep behavior consistent."""
+    @staticmethod
+    def adaptive_alpha(cargo_urgency: float, threat: float, prev_bias: float) -> float:
+        c = _clamp01(cargo_urgency)
+        t = _clamp01(threat)
+        pb = _clamp01(prev_bias)
+        divergence = abs(c - 0.5) + abs(t - 0.5) + abs(pb - 0.5)
+        scaled = _clamp01(divergence / 1.5)
+        return Params.MOMENTUM_ALPHA_MIN + scaled * (Params.MOMENTUM_ALPHA_MAX - Params.MOMENTUM_ALPHA_MIN)
+
+    @staticmethod
+    def adaptive_inertia(val: float, base: float) -> float:
+        v = _clamp01(val)
+        prev = _clamp01(_runtime_state.get("prev_threat", 0.5))
+        distance = abs(v - 0.5)
+        trend = abs(v - prev)
+        urgency = min(1.0, 0.85 * distance + 0.95 * trend)
+        scale = 1.0 - 0.92 * urgency
+        inertia = max(0.005, base * max(0.007, scale))
+        return inertia
+
+    @staticmethod
+    def smooth(val: float, inertia: float) -> float:
+        v = _clamp01(val)
+        return _clamp01((1.0 - inertia) * v + inertia * 0.5)
+
+    @staticmethod
+    def update_momentum(cargo_urgency: float, bias: float, threat: float = None) -> None:
+        prev_bias = _runtime_state.get("prev_bias", 0.5)
+        prev_threat = _runtime_state.get("prev_threat", 0.5)
+        a = MomentumController.adaptive_alpha(cargo_urgency, threat if threat is not None else prev_threat, prev_bias)
+        _runtime_state["prev_cargo_urgency"] = (1.0 - a) * _runtime_state.get("prev_cargo_urgency", cargo_urgency) + a * cargo_urgency
+        _runtime_state["prev_bias"] = (1.0 - a) * prev_bias + a * bias
+        if threat is not None:
+            _runtime_state["prev_threat"] = (1.0 - a) * prev_threat + a * threat
+=======
+# -----------------------
+# Momentum / smoothing controller
+# -----------------------
+class MomentumController:
+    """Encapsulate adaptive alpha/inertia and smoothing to keep behavior consistent."""
+    @staticmethod
+    def adaptive_alpha(cargo_urgency: float, threat: float, prev_bias: float) -> float:
+        c = _clamp01(cargo_urgency)
+        t = _clamp01(threat)
+        pb = _clamp01(prev_bias)
+        divergence = abs(c - 0.5) + abs(t - 0.5) + abs(pb - 0.5)
+        scaled = _clamp01(divergence / 1.5)
+        return Params.MOMENTUM_ALPHA_MIN + scaled * (Params.MOMENTUM_ALPHA_MAX - Params.MOMENTUM_ALPHA_MIN)
+
+    @staticmethod
+    def adaptive_inertia(val: float, base: float) -> float:
+        """
+        Compute inertia that is smaller (faster response) when signals deviate from neutral or show a trend.
+        Also account for recent cargo urgency trend to allow logistics-driven rapid adaptation.
+        """
+        v = _clamp01(val)
+        prev_threat = _clamp01(_runtime_state.get("prev_threat", 0.5))
+        prev_cargo = _clamp01(_runtime_state.get("prev_cargo_urgency", 0.5))
+
+        # threat distance/trend
+        distance = abs(v - 0.5)
+        trend = abs(v - prev_threat)
+
+        # cargo trend additionally weights urgency when logistics are changing rapidly
+        cargo_trend = abs(prev_cargo - _clamp01(_runtime_state.get("prev_cargo_urgency", prev_cargo)))
+        # but use a meaningful recent cargo signal (if available directly in runtime_state)
+        cargo_recent_trend = abs(prev_cargo - 0.5)
+
+        # prioritize trend slightly more, and incorporate cargo recent deviation to reduce inertia when logistics matter
+        urgency = min(1.0, 0.80 * distance + 0.95 * trend + 0.40 * cargo_recent_trend)
+        scale = 1.0 - 0.94 * urgency
+
+        # Lower floors to permit faster reaction in crises, but avoid vanishing inertia
+        inertia = max(0.003, base * max(0.004, scale))
+        return inertia
+
+    @staticmethod
+    def smooth(val: float, inertia: float) -> float:
+        v = _clamp01(val)
+        return _clamp01((1.0 - inertia) * v + inertia * 0.5)
+
+    @staticmethod
+    def update_momentum(cargo_urgency: float, bias: float, threat: float = None) -> None:
+        prev_bias = _runtime_state.get("prev_bias", 0.5)
+        prev_threat = _runtime_state.get("prev_threat", 0.5)
+        a = MomentumController.adaptive_alpha(cargo_urgency, threat if threat is not None else prev_threat, prev_bias)
+        # store a momentum-weighted cargo urgency so adaptive_inertia can use recent cargo history
+        _runtime_state["prev_cargo_urgency"] = (1.0 - a) * _runtime_state.get("prev_cargo_urgency", cargo_urgency) + a * cargo_urgency
+        _runtime_state["prev_bias"] = (1.0 - a) * prev_bias + a * bias
+        if threat is not None:
+            _runtime_state["prev_threat"] = (1.0 - a) * prev_threat + a * threat
+>>>>>>> REPLACE
+</DIFF>

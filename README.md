@@ -43,6 +43,10 @@ export OPENAI_API_KEY="your-key"
 shinka run --config shinka_task/shinka_config.yaml
 ```
 
+### Pre-evolved strategy
+
+The best evolved strategy is included in `results/best/`. To re-run the full evolution from scratch (~600 generations), use the ShinkaEvolve command above.
+
 ### Launch dashboard
 
 ```bash
